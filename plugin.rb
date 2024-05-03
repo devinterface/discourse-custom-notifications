@@ -4,7 +4,7 @@
 # about: Nothing about
 # meta_topic_id: TODO
 # version: 0.0.1
-# authors: DevInterface
+# authors: DevInterface Srl
 # url: Nothing url
 # required_version: 2.7.0
 
@@ -32,7 +32,7 @@ after_initialize do
   require_relative 'app/controllers/moderatori_controller'
   DiscourseEvent.on(:topic_created) do |topic, opts, user|
 
-  #  cerco gli user dei gruppi D-A_ e gli invio notifica di apertura topic
+  # cerco gli user dei gruppi D-A_ e gli invio notifica di apertura topic
     Group.where("name ILIKE 'D-A_%'").each do |group|
       group.users.each do |user|
         notification = Notification.create({
@@ -48,5 +48,4 @@ after_initialize do
 
   end
 
-  
 end
