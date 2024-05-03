@@ -1,0 +1,13 @@
+
+<h3>Moderatori</h3>
+<div class="buttons">
+  <DButton
+    @label="moderatori.show"
+    @action={{action "showTentacle"}}
+    @icon="eye"
+    @id="show-tentacle"
+  />
+</div>
+{{#if showText}}
+  <h4>Text</h4>
+{{/if}}

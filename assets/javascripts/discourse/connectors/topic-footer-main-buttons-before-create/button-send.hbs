@@ -1,0 +1,8 @@
+{{#if this.topic}}
+<CustomButton
+  @action={{this.toggleInfo}}
+  @label="custom.send_notification"
+  @id={{this.topic.id}}
+  @topic_id={{this.topic.id}}
+/>
+{{/if}}

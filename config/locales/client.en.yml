@@ -5,5 +5,7 @@ en:
         categories:
           TODO_plugin_name: "Plugin Name"
   js:
-    discourse_plugin_name:
+    moderatori:
       placeholder: placeholder
+      title: Moderatori
+      show: Mostra testo
