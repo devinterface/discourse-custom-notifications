@@ -1,8 +1,9 @@
-{{#if this.topic}}
+{{#if (and this.topic (check-moderatori this.currentUser.groups)) }}
 <CustomButton
   @action={{this.toggleInfo}}
   @label="custom.send_notification"
   @id={{this.topic.id}}
   @topic_id={{this.topic.id}}
+  @icon="arrow-up"
 />
 {{/if}}

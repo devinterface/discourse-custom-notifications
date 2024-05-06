@@ -28,14 +28,15 @@ after_initialize do
     end
     
   end
-  # require_relative "lib/my_plugin_module/engine"
-  require_relative 'app/controllers/moderatori_controller'
-  DiscourseEvent.on(:topic_created) do |topic, opts, user|
 
-  # cerco gli user dei gruppi D-A_ e gli invio notifica di apertura topic
-    Group.where("name ILIKE 'D-A_%'").each do |group|
-      group.users.each do |user|
-        notification = Notification.create({
+  class ::Jobs::SendEmailJob < ::Jobs::Base
+    sidekiq_options retry: false
+
+    def execute(args)
+      user = User.find(1)
+      topic = Topic.find(args[:topic_id])
+      post = topic.posts.first
+      notification = Notification.create({
           user_id: user.id,
           topic_id: topic.id,
           read: false,
@@ -43,9 +44,67 @@ after_initialize do
           data: "{\"topic_title\":\"#{topic.title}\"}",
           high_priority: true
         })
+      Group.where("name ILIKE 'D-A_%'").each do |group|
+        group.users.each do |user|
+          message = UserNotifications.public_send(
+            "user_invited_to_topic",
+            user,
+            notification_type: Notification.types[notification.notification_type],
+            notification_data_hash: notification.data_hash,
+            post: post,
+          )
+          Email::Sender.new(message, :invited_to_topic).send
+        end
+      end
+
+    end
+    
+  end
+
+  # require_relative "lib/my_plugin_module/engine"
+  require_relative 'app/controllers/moderatori_controller'
+  DiscourseEvent.on(:topic_created) do |topic, opts, user|
+    ### un'altra modalità per un after_create
+  end
+
+
+  class NewTopicObserver
+    def self.topic_created(topic)
+      @pending_topics ||= {}
+      @pending_topics[topic.id] = topic
+    end
+  
+    def self.post_created(post)
+      if @pending_topics && @pending_topics.key?(post.topic_id)
+        topic = post.topic
+        Jobs.enqueue(:send_email_job, topic_id: topic.id)
+        @pending_topics.delete(post.topic_id)
       end
     end
+  end
+  
+  Topic.class_eval do
+    after_create :notify_topic_created
+  
+    def notify_topic_created
+      NewTopicObserver.topic_created(self)
+    end
+  end
+  
+  Post.class_eval do
+    after_create :notify_post_created
+  
+    def notify_post_created
+      if self.is_first_post?
+        NewTopicObserver.post_created(self)
+      end
+    end
+  end
 
+  require_relative "lib/custom_function"
+
+  class ::User
+    include CustomFunction
   end
 
 end

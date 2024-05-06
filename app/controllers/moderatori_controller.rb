@@ -17,6 +17,6 @@ class ModeratoriController < ::ApplicationController
         })
       end
     end
-    render json: { title: notification.id }
+    render json: { test: "test" }
   end
 end
