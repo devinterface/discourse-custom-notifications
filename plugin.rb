@@ -44,7 +44,7 @@ after_initialize do
           data: "{\"topic_title\":\"#{topic.title}\"}",
           high_priority: true
         })
-      Group.where("name ILIKE 'D-A_%'").each do |group|
+      topic.category.groups.where("name ILIKE 'D-A_%'").each do |group|
         group.users.each do |user|
           message = UserNotifications.public_send(
             "user_invited_to_topic",

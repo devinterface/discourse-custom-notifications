@@ -5,7 +5,7 @@ class ModeratoriController < ::ApplicationController
 
   def index
     topic = Topic.find(params[:topic_id])
-    Group.where("name ILIKE 'D-M_%'").each do |group|
+    topic.category.groups.where("name ILIKE 'D-M_%'").each do |group|
       group.users.each do |user|
         notification = Notification.create({
           user_id: user.id,
