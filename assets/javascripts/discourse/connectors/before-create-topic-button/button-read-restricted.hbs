@@ -1,0 +1,10 @@
+{{#if (and this.category this.currentUser.admin) }}
+<ButtonEditReadRestriction
+  @action={{this.toggleInfo}}
+  @label="custom.edit_read_restricted"
+  @id={{this.category.id}}
+  @category_id={{this.category.id}}
+  @icon="eye"
+  class="btn-default"
+/>
+{{/if}}

@@ -2,6 +2,7 @@ en:
   js:
     custom:
       send_notification: "Send notification"
+      edit_read_restricted: "Edit restricted"
     number:
       format:
         # symbol used to separate the integer part from the fractional part of a number

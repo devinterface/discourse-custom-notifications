@@ -16,6 +16,7 @@ add_admin_route 'moderatori.title', 'moderatori'
 Discourse::Application.routes.append do
   get '/admin/plugins/moderatori' => 'admin/plugins#index', constraints: StaffConstraint.new
   get '/moderatori/:topic_id' => 'moderatori#index'
+  get '/category_read_restricted/:category_id' => 'moderatori#edit_category_read_restricted'
 end
 
 after_initialize do

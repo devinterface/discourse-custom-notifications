@@ -2,6 +2,7 @@ it:
   js:
     custom:
       send_notification: "Invia notifica"
+      edit_read_restricted: "Modifica restrizioni"
     number:
       format:
         separator: ","

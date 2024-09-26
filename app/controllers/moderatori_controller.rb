@@ -19,4 +19,10 @@ class ModeratoriController < ::ApplicationController
     end
     render json: { test: "test" }
   end
+
+  def edit_category_read_restricted
+    category = Category.find(params[:category_id])
+    category.read_restricted = !category.read_restricted
+    category.save!
+  end
 end
