@@ -34,32 +34,35 @@ after_initialize do
     sidekiq_options retry: false
 
     def execute(args)
-      user = User.find(1)
+      user_system = User.find(1)
       topic = Topic.find(args[:topic_id])
-      post = topic.posts.first
       notification = Notification.create({
-          user_id: user.id,
+          user_id: user_system.id,
           topic_id: topic.id,
           read: false,
           notification_type: Notification.types[:invited_to_topic],
           data: "{\"topic_title\":\"#{topic.title}\"}",
           high_priority: true
         })
-      topic.category.groups.where("name ILIKE 'D-A_%'").each do |group|
-        group.users.each do |user|
+      if args[:group_type] == "D-A_"
+        topic_groups = topic.try(:category).try(:groups).where("name ILIKE 'D-A_%'")
+      elsif args[:group_type] == "D-M_"
+        topic_groups = topic.try(:category).try(:groups).where("name ILIKE 'D-M_%'")
+      end
+      topic_groups.each do |group|
+        group.try(:users).each do |user|
           message = UserNotifications.public_send(
             "user_invited_to_topic",
             user,
             notification_type: Notification.types[notification.notification_type],
             notification_data_hash: notification.data_hash,
-            post: post,
+            post: topic.try(:posts).try(:last),
           )
           Email::Sender.new(message, :invited_to_topic).send
         end
       end
-
     end
-    
+  
   end
 
   # require_relative "lib/my_plugin_module/engine"
@@ -78,7 +81,7 @@ after_initialize do
     def self.post_created(post)
       if @pending_topics && @pending_topics.key?(post.topic_id)
         topic = post.topic
-        Jobs.enqueue(:send_email_job, topic_id: topic.id)
+        Jobs.enqueue(:send_email_job, topic_id: topic.id, group_type: "D-A_")
         @pending_topics.delete(post.topic_id)
       end
     end

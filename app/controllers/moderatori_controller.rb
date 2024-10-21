@@ -5,18 +5,8 @@ class ModeratoriController < ::ApplicationController
 
   def index
     topic = Topic.find(params[:topic_id])
-    topic.category.groups.where("name ILIKE 'D-M_%'").each do |group|
-      group.users.each do |user|
-        notification = Notification.create({
-          user_id: user.id,
-          topic_id: topic.id,
-          read: false,
-          notification_type: Notification.types[:invited_to_topic],
-          data: "{\"topic_title\":\"#{topic.title}\"}",
-          high_priority: true
-        })
-      end
-    end
+    # questo comando lancia il job in background per mandare le mail
+    Jobs.enqueue(:send_email_job, topic_id: topic.id, group_type: "D-M_")
     render json: { test: "test" }
   end
 
