@@ -8,3 +8,22 @@
   class="btn-default"
 />
 {{/if}}
+<DButton
+  @translatedLabel="Mostra notifiche"
+  @action={{fn (mut this.modalIsVisible) true}}
+/>
+
+{{#if this.modalIsVisible}}
+  <DModal @title="Notifiche inviate" @closeModal={{fn (mut this.modalIsVisible) false}} class="topic-bulk-actions-modal">
+    <table class="table">
+      <tr>
+        <th>Data</th>
+      </tr>
+      {{#each this.topic.custom_notifications as |notification|}}
+      <tr>
+        <td>{{notification.[0]}}</td>
+      </tr>
+      {{/each}}
+    </table>
+  </DModal>
+{{/if}}

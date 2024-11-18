@@ -105,10 +105,47 @@ after_initialize do
     end
   end
 
+  SiteSetting.topic_excerpt_maxlength = 1000
+
   require_relative "lib/custom_function"
 
   class ::User
     include CustomFunction
+  end
+
+  require_dependency File.expand_path("../app/models/discourse-custom-notifications/custom_notification", __FILE__)
+
+  # add_to_serializer(
+  #   :current_user,
+  #   :get_custom_notifications,
+  # ) { Moderatori::CustomNotification.all.map{|c| [c.try(:user).try(:username),c.try(:group).try(:name),c.try(:topic).try(:title),c.try(:created_at).strftime("%d/%m/%Y %k:%M"),scope.request.original_url.to_s, scope.request.path.to_s, scope.request]} }
+
+  add_to_serializer(:topic_view, :custom_notifications) do
+    topic_id = object.topic.id
+    user_system = User.find(1)
+    Notification.where(
+      user_id: user_system.id,
+      topic_id: topic_id,
+      notification_type: Notification.types[:invited_to_topic],
+    ).map{|n| [n.try(:created_at).strftime("%d/%m/%Y %k:%M")]}
+  end
+
+  require "csv"
+
+  TopicsBulkAction.register_operation("operazione_test") do
+    csv_name = "csv_test_#{Time.now.strftime('%Y%m%d%H%M%S')}.csv"
+    csv_path = "#{Rails.root}/#{csv_name}"
+    CSV.open(csv_path, "w", col_sep: ';') do |csv|
+      csv << ["ID","TITLE"]
+      begin
+        topics.each do |topic|
+          csv << [topic.id, topic.title]
+        end
+      rescue => e
+        csv << ["#{e}"]
+      end
+    end
+    # send_data open(csv_path).read, filename: csv_name, type: "text/csv"
   end
 
 end

@@ -3,6 +3,8 @@ it:
     custom:
       send_notification: "Invia notifica"
       edit_read_restricted: "Modifica restrizioni"
+      export_topic_csv: "Esporta CSV"
+      show_notifications: "Mostra notifiche"
     number:
       format:
         separator: ","
