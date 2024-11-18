@@ -113,7 +113,7 @@ after_initialize do
     include CustomFunction
   end
 
-  require_dependency File.expand_path("../app/models/discourse-custom-notifications/custom_notification", __FILE__)
+  # require_dependency File.expand_path("../app/models/discourse-custom-notifications/custom_notification", __FILE__)
 
   # add_to_serializer(
   #   :current_user,
