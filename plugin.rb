@@ -34,10 +34,10 @@ after_initialize do
     sidekiq_options retry: false
 
     def execute(args)
-      user_system = User.find(1)
+      user_id = args[:user_id]
       topic = Topic.find(args[:topic_id])
       notification = Notification.create({
-          user_id: user_system.id,
+          user_id: user_id,
           topic_id: topic.id,
           read: false,
           notification_type: Notification.types[:invited_to_topic],
@@ -70,6 +70,10 @@ after_initialize do
   DiscourseEvent.on(:topic_created) do |topic, opts, user|
     ### un'altra modalità per un after_create
   end
+
+  # modified_defaults = CSV::DEFAULT_OPTIONS.dup
+  # modified_defaults[:col_sep] = ';'
+  # CSV::DEFAULT_OPTIONS = modified_defaults.freeze
 
 
   class NewTopicObserver
@@ -115,19 +119,39 @@ after_initialize do
 
   # require_dependency File.expand_path("../app/models/discourse-custom-notifications/custom_notification", __FILE__)
 
-  # add_to_serializer(
-  #   :current_user,
-  #   :get_custom_notifications,
-  # ) { Moderatori::CustomNotification.all.map{|c| [c.try(:user).try(:username),c.try(:group).try(:name),c.try(:topic).try(:title),c.try(:created_at).strftime("%d/%m/%Y %k:%M"),scope.request.original_url.to_s, scope.request.path.to_s, scope.request]} }
+  add_to_serializer(:topic_view, :notification_buttons) do
+    # posso accedere allo user come scope.user.id
+    topic_id = object.topic.id
+    users_count = Topic.find(object.topic.id).try(:category).try(:groups).where("name ILIKE 'D-M_%'").count
+    notifications_count = Notification.where(topic_id: topic_id, notification_type: Notification.types[:invited_to_topic]).count
+    return [
+      users_count > 0,
+      notifications_count > 0,
+      notifications_count > 1 ? "Mostra #{notifications_count} notifiche" : "Mostra #{notifications_count} notifica"
+    ]
+  end
+
+  # add_to_serializer(:topic_view, :custom_notifications_number) do
+  #   topic_id = object.topic.id
+  #   user_system = User.find(1)
+  #   notification_count = Notification.where(
+  #     user_id: user_system.id,
+  #     topic_id: topic_id,
+  #     notification_type: Notification.types[:invited_to_topic],
+  #   ).count
+  #   if notification_count == 1
+  #     return "Mostra #{notification_count} notifica"
+  #   else
+  #     return "Mostra #{notification_count} notifiche"
+  #   end
+  # end
 
   add_to_serializer(:topic_view, :custom_notifications) do
     topic_id = object.topic.id
-    user_system = User.find(1)
     Notification.where(
-      user_id: user_system.id,
       topic_id: topic_id,
       notification_type: Notification.types[:invited_to_topic],
-    ).map{|n| [n.try(:created_at).strftime("%d/%m/%Y %k:%M")]}
+    ).map{|n| [n.try(:user).try(:username) ,n.try(:created_at).strftime("%d/%m/%Y %k:%M")]}
   end
 
   require "csv"

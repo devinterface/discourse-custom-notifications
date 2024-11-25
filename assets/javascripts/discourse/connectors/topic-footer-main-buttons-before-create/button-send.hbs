@@ -1,4 +1,4 @@
-{{#if (or (and this.topic (check-moderatori this.currentUser.groups)) (and this.topic this.currentUser.admin)) }}
+{{#if (or (and this.topic.notification_buttons.[0] (check-moderatori this.currentUser.groups)) (and this.topic.notification_buttons.[0] this.currentUser.admin)) }}
 <CustomButton
   @action={{this.toggleInfo}}
   @label="custom.send_notification"
@@ -7,21 +7,26 @@
   @icon="arrow-up"
   class="btn-default"
 />
-{{/if}}
+
+{{#if this.topic.notification_buttons.[1]}}
 <DButton
-  @translatedLabel="Mostra notifiche"
+  @translatedLabel={{this.topic.notification_buttons.[2]}}
   @action={{fn (mut this.modalIsVisible) true}}
 />
+{{/if}}
+{{/if}}
 
 {{#if this.modalIsVisible}}
-  <DModal @title="Notifiche inviate" @closeModal={{fn (mut this.modalIsVisible) false}} class="topic-bulk-actions-modal">
-    <table class="table">
+  <DModal @title="Notifiche inviate" @closeModal={{fn (mut this.modalIsVisible) false}} class="topic-bulk-actions-modal -large">
+    <table class="table" style="width: 100%;">
       <tr>
+        <th>Utente</th>
         <th>Data</th>
       </tr>
       {{#each this.topic.custom_notifications as |notification|}}
       <tr>
         <td>{{notification.[0]}}</td>
+        <td>{{notification.[1]}}</td>
       </tr>
       {{/each}}
     </table>
