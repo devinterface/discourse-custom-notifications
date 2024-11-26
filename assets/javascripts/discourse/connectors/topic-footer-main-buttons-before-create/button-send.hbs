@@ -1,4 +1,4 @@
-{{#if (or (and this.topic.notification_buttons.[0] (check-moderatori this.currentUser.groups)) (and this.topic.notification_buttons.[0] this.currentUser.admin)) }}
+{{#if (and this.topic.notification_buttons.[0] this.currentUser.admin) }}
 <CustomButton
   @action={{this.toggleInfo}}
   @label="custom.send_notification"
@@ -7,13 +7,14 @@
   @icon="arrow-up"
   class="btn-default"
 />
+{{/if}}
 
 {{#if this.topic.notification_buttons.[1]}}
 <DButton
   @translatedLabel={{this.topic.notification_buttons.[2]}}
   @action={{fn (mut this.modalIsVisible) true}}
+  @icon="eye"
 />
-{{/if}}
 {{/if}}
 
 {{#if this.modalIsVisible}}

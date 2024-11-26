@@ -47,7 +47,7 @@ after_initialize do
       if args[:group_type] == "D-A_"
         topic_groups = topic.try(:category).try(:groups).where("name ILIKE 'D-A_%'")
       elsif args[:group_type] == "D-M_"
-        topic_groups = topic.try(:category).try(:groups).where("name ILIKE 'D-M_%'")
+        topic_groups = topic.try(:category).try(:groups) #.where("name ILIKE 'D-M_%'")
       end
       topic_groups.each do |group|
         group.try(:users).each do |user|
@@ -56,7 +56,7 @@ after_initialize do
             user,
             notification_type: Notification.types[notification.notification_type],
             notification_data_hash: notification.data_hash,
-            post: topic.try(:posts).try(:last),
+            post: topic.try(:posts).try(:first),
           )
           Email::Sender.new(message, :invited_to_topic).send
         end
@@ -122,7 +122,7 @@ after_initialize do
   add_to_serializer(:topic_view, :notification_buttons) do
     # posso accedere allo user come scope.user.id
     topic_id = object.topic.id
-    users_count = Topic.find(object.topic.id).try(:category).try(:groups).where("name ILIKE 'D-M_%'").count
+    users_count = Topic.find(object.topic.id).try(:category).try(:groups).count #.where("name ILIKE 'D-M_%'").count
     notifications_count = Notification.where(topic_id: topic_id, notification_type: Notification.types[:invited_to_topic]).count
     return [
       users_count > 0,
@@ -151,7 +151,7 @@ after_initialize do
     Notification.where(
       topic_id: topic_id,
       notification_type: Notification.types[:invited_to_topic],
-    ).map{|n| [n.try(:user).try(:username) ,n.try(:created_at).strftime("%d/%m/%Y %k:%M")]}
+    ).map{|n| [n.try(:user).try(:username), n.try(:created_at).in_time_zone('Rome').strftime("%d/%m/%Y %k:%M")]}
   end
 
   require "csv"
