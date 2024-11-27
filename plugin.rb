@@ -34,8 +34,14 @@ after_initialize do
     sidekiq_options retry: false
 
     def execute(args)
-      user_id = args[:user_id]
       topic = Topic.find(args[:topic_id])
+      # se creo topic ma non ha gruppi D-A_ a cui inviare mail allora non crea neanche la notifica
+      return if topic.try(:category).try(:groups).where("name ILIKE 'D-A_%'").count == 0 and args[:group_type] == "D-A_"
+      if args[:user_id]
+        user_id = args[:user_id]
+      else
+        user_id = -1
+      end
       notification = Notification.create({
           user_id: user_id,
           topic_id: topic.id,
@@ -45,8 +51,10 @@ after_initialize do
           high_priority: true
         })
       if args[:group_type] == "D-A_"
+        # quando creo topic
         topic_groups = topic.try(:category).try(:groups).where("name ILIKE 'D-A_%'")
       elsif args[:group_type] == "D-M_"
+        # quando invio notifica manuale
         topic_groups = topic.try(:category).try(:groups) #.where("name ILIKE 'D-M_%'")
       end
       topic_groups.each do |group|
@@ -122,10 +130,10 @@ after_initialize do
   add_to_serializer(:topic_view, :notification_buttons) do
     # posso accedere allo user come scope.user.id
     topic_id = object.topic.id
-    users_count = Topic.find(object.topic.id).try(:category).try(:groups).count #.where("name ILIKE 'D-M_%'").count
+    groups_count = Topic.find(object.topic.id).try(:category).try(:groups).where("name ILIKE 'D-A_%' OR name ILIKE 'D-M_%'").count
     notifications_count = Notification.where(topic_id: topic_id, notification_type: Notification.types[:invited_to_topic]).count
     return [
-      users_count > 0,
+      groups_count > 0,
       notifications_count > 0,
       notifications_count > 1 ? "Mostra #{notifications_count} notifiche" : "Mostra #{notifications_count} notifica"
     ]
@@ -151,7 +159,7 @@ after_initialize do
     Notification.where(
       topic_id: topic_id,
       notification_type: Notification.types[:invited_to_topic],
-    ).map{|n| [n.try(:user).try(:username), n.try(:created_at).in_time_zone('Rome').strftime("%d/%m/%Y %k:%M")]}
+    ).order(user_id: :asc).map{|n| [n.try(:user).try(:username), n.try(:created_at).in_time_zone('Rome').strftime("%d/%m/%Y %k:%M"), n.user_id == -1 ? "Automatica" : "Manuale"]}
   end
 
   require "csv"

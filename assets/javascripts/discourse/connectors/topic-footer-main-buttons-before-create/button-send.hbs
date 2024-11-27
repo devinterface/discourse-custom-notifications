@@ -23,11 +23,13 @@
       <tr>
         <th>Utente</th>
         <th>Data</th>
+        <th>Tipo</th>
       </tr>
       {{#each this.topic.custom_notifications as |notification|}}
       <tr>
         <td>{{notification.[0]}}</td>
         <td>{{notification.[1]}}</td>
+        <td>{{notification.[2]}}</td>
       </tr>
       {{/each}}
     </table>
