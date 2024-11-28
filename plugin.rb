@@ -17,6 +17,7 @@ Discourse::Application.routes.append do
   get '/admin/plugins/moderatori' => 'admin/plugins#index', constraints: StaffConstraint.new
   get '/moderatori/:topic_id' => 'moderatori#index'
   get '/category_read_restricted/:category_id' => 'moderatori#edit_category_read_restricted'
+  post '/download_csv_topics' => 'moderatori#download_csv_topics'
 end
 
 after_initialize do
@@ -168,10 +169,12 @@ after_initialize do
     csv_name = "csv_test_#{Time.now.strftime('%Y%m%d%H%M%S')}.csv"
     csv_path = "#{Rails.root}/#{csv_name}"
     CSV.open(csv_path, "w", col_sep: ';') do |csv|
-      csv << ["ID","TITLE"]
+      csv << ["Id","Titolo","Creazione","Sommario","Link"]
       begin
         topics.each do |topic|
-          csv << [topic.id, topic.title]
+          topic_link = "#{Discourse.base_url}/t/#{topic.slug}/#{topic.id}"
+          topic_sommario = topic.try(:posts).try(:first).try(:excerpt) || ""
+          csv << [topic.id, topic.title, topic.created_at.strftime('%d/%m/%Y %H:%M:%S'), topic_sommario, topic_link]
         end
       rescue => e
         csv << ["#{e}"]
