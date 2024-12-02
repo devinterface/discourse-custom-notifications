@@ -8,7 +8,9 @@ class ModeratoriController < ::ApplicationController
     user_id = current_user.id
     # questo comando lancia il job in background per mandare le mail
     Jobs.enqueue(:send_email_job, topic_id: topic.id, group_type: "D-M_", user_id: user_id)
-    render json: { test: "test" }
+    s = ""
+    topic.try(:category).try(:groups).map{|g| s += "#{g.name}; "}
+    render json: { groups_name: s }
   end
 
   def edit_category_read_restricted

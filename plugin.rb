@@ -80,11 +80,6 @@ after_initialize do
     ### un'altra modalità per un after_create
   end
 
-  # modified_defaults = CSV::DEFAULT_OPTIONS.dup
-  # modified_defaults[:col_sep] = ';'
-  # CSV::DEFAULT_OPTIONS = modified_defaults.freeze
-
-
   class NewTopicObserver
     def self.topic_created(topic)
       @pending_topics ||= {}
@@ -140,47 +135,36 @@ after_initialize do
     ]
   end
 
-  # add_to_serializer(:topic_view, :custom_notifications_number) do
-  #   topic_id = object.topic.id
-  #   user_system = User.find(1)
-  #   notification_count = Notification.where(
-  #     user_id: user_system.id,
-  #     topic_id: topic_id,
-  #     notification_type: Notification.types[:invited_to_topic],
-  #   ).count
-  #   if notification_count == 1
-  #     return "Mostra #{notification_count} notifica"
-  #   else
-  #     return "Mostra #{notification_count} notifiche"
-  #   end
-  # end
-
   add_to_serializer(:topic_view, :custom_notifications) do
     topic_id = object.topic.id
     Notification.where(
       topic_id: topic_id,
       notification_type: Notification.types[:invited_to_topic],
-    ).order(user_id: :asc).map{|n| [n.try(:user).try(:username), n.try(:created_at).in_time_zone('Rome').strftime("%d/%m/%Y %k:%M"), n.user_id == -1 ? "Automatica" : "Manuale"]}
+    ).order(created_at: :desc).map{|n| [n.try(:user).try(:username), n.try(:created_at).in_time_zone('Rome').strftime("%d/%m/%Y %k:%M"), n.user_id == -1 ? "Automatica" : "Manuale"]}
   end
 
-  require "csv"
+  modified_defaults = CSV::DEFAULT_OPTIONS.dup
+  modified_defaults[:col_sep] = ';'
+  CSV::DEFAULT_OPTIONS = modified_defaults.freeze
 
-  TopicsBulkAction.register_operation("operazione_test") do
-    csv_name = "csv_test_#{Time.now.strftime('%Y%m%d%H%M%S')}.csv"
-    csv_path = "#{Rails.root}/#{csv_name}"
-    CSV.open(csv_path, "w", col_sep: ';') do |csv|
-      csv << ["Id","Titolo","Creazione","Sommario","Link"]
-      begin
-        topics.each do |topic|
-          topic_link = "#{Discourse.base_url}/t/#{topic.slug}/#{topic.id}"
-          topic_sommario = topic.try(:posts).try(:first).try(:excerpt) || ""
-          csv << [topic.id, topic.title, topic.created_at.strftime('%d/%m/%Y %H:%M:%S'), topic_sommario, topic_link]
-        end
-      rescue => e
-        csv << ["#{e}"]
-      end
-    end
-    # send_data open(csv_path).read, filename: csv_name, type: "text/csv"
-  end
+  # require "csv"
+
+  # TopicsBulkAction.register_operation("operazione_test") do
+  #   csv_name = "csv_test_#{Time.now.strftime('%Y%m%d%H%M%S')}.csv"
+  #   csv_path = "#{Rails.root}/#{csv_name}"
+  #   CSV.open(csv_path, "w", col_sep: ';') do |csv|
+  #     csv << ["Id","Titolo","Creazione","Sommario","Link"]
+  #     begin
+  #       topics.each do |topic|
+  #         topic_link = "#{Discourse.base_url}/t/#{topic.slug}/#{topic.id}"
+  #         topic_sommario = topic.try(:posts).try(:first).try(:excerpt) || ""
+  #         csv << [topic.id, topic.title, topic.created_at.strftime('%d/%m/%Y %H:%M:%S'), topic_sommario, topic_link]
+  #       end
+  #     rescue => e
+  #       csv << ["#{e}"]
+  #     end
+  #   end
+  #   # send_data open(csv_path).read, filename: csv_name, type: "text/csv"
+  # end
 
 end

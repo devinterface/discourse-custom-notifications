@@ -1,34 +1,44 @@
-// import { registerHelper } from "discourse-common/lib/helpers";
-// import { _addBulkButton } from "discourse/components/modal/topic-bulk-actions";
 import { addBulkDropdownButton } from "discourse/components/bulk-select-topics-dropdown";
-// questo import è dalla versione 3.3.2
-
 addBulkDropdownButton({
   id: "button-export-csv",
   label: "custom.export_topic_csv",
   icon: "file",
   class: "btn-default",
   visible: ({ currentUser }) => true,
-  action({ topics }) {
+  action: () => {
     let topics_id = [];
-    for (let i = 0; i < topics.length; i++) {
-      topics_id.push(topics[i].id);
-    }
+    const listItems = document.querySelectorAll('div[role="listitem"]');
+
+    listItems.forEach((item) => {
+      const bulkSelectSpan = item.querySelector("span.bulk-select");
+
+      if (bulkSelectSpan) {
+        const checkbox = bulkSelectSpan.querySelector('input[type="checkbox"]');
+
+        if (checkbox && checkbox.checked) {
+          const topicDiv = item.querySelector("div[data-topic-id]");
+
+          if (topicDiv) {
+            const topicId = topicDiv.getAttribute("data-topic-id");
+            topics_id.push(topicId);
+          } else {
+          }
+        }
+      }
+    });
     $.ajax({
       type: "POST",
       url: "/download_csv_topics",
       data: { topics_id: topics_id },
       xhrFields: {
-        responseType: "blob", // Specifica che la risposta è un file blob
+        responseType: "blob",
       },
       success: function (blob, status, xhr) {
-        // Ottieni il nome del file dall'header Content-Disposition
         const disposition = xhr.getResponseHeader("Content-Disposition");
         const filename = disposition
           ? disposition.match(/filename="(.+)"/)[1]
           : "download.csv";
 
-        // Crea un URL per il file blob e avvia il download
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -44,15 +54,3 @@ addBulkDropdownButton({
     });
   },
 });
-
-// registerHelper("check-moderatori", checkModeratori);
-
-// export default function checkModeratori(args) {
-//   let groups = args[0];
-//   for (let i = 0; i < groups.length; i++) {
-//     if (groups[i]["name"] == "Moderatori") {
-//       return true;
-//     }
-//   }
-//   return false;
-// }

@@ -94,7 +94,9 @@ export default class DButton extends GlimmerComponentWithDeprecatedParentView {
   @action
   click(event) {
     let topic_id = this.args.topic_id;
-    ajax(`/moderatori/${topic_id}`, {}).then((uploads) => console.log(uploads));
+    ajax(`/moderatori/${topic_id}`, {}).then((res) => {
+      alert(`Ho inviato un'email ai gruppi: ${res["groups_name"]} \n La pagina verrà ricaricata!!!`);
+      location.reload();} );
   }
 
   @action
