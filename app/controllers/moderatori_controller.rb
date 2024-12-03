@@ -22,18 +22,15 @@ class ModeratoriController < ::ApplicationController
   def download_csv_topics
     require "csv"
     topics_id = params[:topics_id]
+    order_clause = topics_id.map.with_index { |id, index| "WHEN #{id} THEN #{index}" }.join(' ')
 
     csv_name = "Topics_#{Time.now.strftime('%Y_%m_%d__%H_%M_%S')}.csv"
     csv_file = CSV.generate(col_sep: ';') do |csv|
       csv << ["Id","Titolo","Creazione","Sommario","Link"]
-      begin
-        Topic.where(id: topics_id).order(created_at: :desc).each do |topic|
-          topic_link = "#{Discourse.base_url}/t/#{topic.slug}/#{topic.id}"
-          topic_sommario = topic.try(:posts).try(:first).try(:raw) # topic.try(:posts).try(:first).try(:excerpt) || ""
-          csv << [topic.id, topic.title, topic.created_at.strftime('%d/%m/%Y %H:%M:%S'), topic_sommario, topic_link]
-        end
-      rescue => e
-        csv << ["#{e}"]
+      Topic.where(id: topics_id).order(Arel.sql("CASE id #{order_clause} END")).each do |topic|
+        topic_link = "#{Discourse.base_url}/t/#{topic.slug}/#{topic.id}"
+        topic_sommario = topic.try(:posts).try(:first).try(:raw) # topic.try(:posts).try(:first).try(:excerpt) || ""
+        csv << [topic.id, topic.title, topic.created_at.strftime('%d/%m/%Y %H:%M:%S'), topic_sommario, topic_link]
       end
     end
 
