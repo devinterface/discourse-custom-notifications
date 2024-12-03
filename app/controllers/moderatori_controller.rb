@@ -9,7 +9,7 @@ class ModeratoriController < ::ApplicationController
     # questo comando lancia il job in background per mandare le mail
     Jobs.enqueue(:send_email_job, topic_id: topic.id, group_type: "D-M_", user_id: user_id)
     s = ""
-    topic.try(:category).try(:groups).map{|g| s += "#{g.name}; "}
+    topic.try(:category).try(:groups).where("name ILIKE 'D-A_%' OR name ILIKE 'D-M_%'").map{|g| s += "#{g.name}; "}
     render json: { groups_name: s }
   end
 
@@ -27,9 +27,9 @@ class ModeratoriController < ::ApplicationController
     csv_file = CSV.generate(col_sep: ';') do |csv|
       csv << ["Id","Titolo","Creazione","Sommario","Link"]
       begin
-        Topic.where(id: topics_id).each do |topic|
+        Topic.where(id: topics_id).order(created_at: :desc).each do |topic|
           topic_link = "#{Discourse.base_url}/t/#{topic.slug}/#{topic.id}"
-          topic_sommario = topic.try(:posts).try(:first).try(:excerpt) || ""
+          topic_sommario = topic.try(:posts).try(:first).try(:raw) # topic.try(:posts).try(:first).try(:excerpt) || ""
           csv << [topic.id, topic.title, topic.created_at.strftime('%d/%m/%Y %H:%M:%S'), topic_sommario, topic_link]
         end
       rescue => e

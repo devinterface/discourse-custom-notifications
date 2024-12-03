@@ -5,6 +5,8 @@ addBulkDropdownButton({
   icon: "file",
   class: "btn-default",
   visible: ({ currentUser }) => true,
+  allowSilent: true,
+  actionType: "performAndRefresh",
   action: () => {
     let topics_id = [];
     const listItems = document.querySelectorAll('div[role="listitem"]');
@@ -52,5 +54,6 @@ addBulkDropdownButton({
         console.error("Errore durante il download del CSV", xhr);
       },
     });
+    location.reload();
   },
 });

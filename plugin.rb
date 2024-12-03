@@ -56,7 +56,7 @@ after_initialize do
         topic_groups = topic.try(:category).try(:groups).where("name ILIKE 'D-A_%'")
       elsif args[:group_type] == "D-M_"
         # quando invio notifica manuale
-        topic_groups = topic.try(:category).try(:groups) #.where("name ILIKE 'D-M_%'")
+        topic_groups = topic.try(:category).try(:groups).where("name ILIKE 'D-A_%' OR name ILIKE 'D-M_%'")
       end
       topic_groups.each do |group|
         group.try(:users).each do |user|
@@ -142,29 +142,5 @@ after_initialize do
       notification_type: Notification.types[:invited_to_topic],
     ).order(created_at: :desc).map{|n| [n.try(:user).try(:username), n.try(:created_at).in_time_zone('Rome').strftime("%d/%m/%Y %k:%M"), n.user_id == -1 ? "Automatica" : "Manuale"]}
   end
-
-  modified_defaults = CSV::DEFAULT_OPTIONS.dup
-  modified_defaults[:col_sep] = ';'
-  CSV::DEFAULT_OPTIONS = modified_defaults.freeze
-
-  # require "csv"
-
-  # TopicsBulkAction.register_operation("operazione_test") do
-  #   csv_name = "csv_test_#{Time.now.strftime('%Y%m%d%H%M%S')}.csv"
-  #   csv_path = "#{Rails.root}/#{csv_name}"
-  #   CSV.open(csv_path, "w", col_sep: ';') do |csv|
-  #     csv << ["Id","Titolo","Creazione","Sommario","Link"]
-  #     begin
-  #       topics.each do |topic|
-  #         topic_link = "#{Discourse.base_url}/t/#{topic.slug}/#{topic.id}"
-  #         topic_sommario = topic.try(:posts).try(:first).try(:excerpt) || ""
-  #         csv << [topic.id, topic.title, topic.created_at.strftime('%d/%m/%Y %H:%M:%S'), topic_sommario, topic_link]
-  #       end
-  #     rescue => e
-  #       csv << ["#{e}"]
-  #     end
-  #   end
-  #   # send_data open(csv_path).read, filename: csv_name, type: "text/csv"
-  # end
 
 end
