@@ -95,9 +95,15 @@ export default class DButton extends GlimmerComponentWithDeprecatedParentView {
   click(event) {
     let topic_id = this.args.topic_id;
     ajax(`/moderatori/${topic_id}`, {}).then((res) => {
-      alert(
-        `Ho inviato un'email ai gruppi: ${res["groups_name"]} \nLa pagina verrà ricaricata!!!`
-      );
+      if (res["sent"]) {
+        alert(
+          `Ho inviato un'email ai gruppi: ${res["groups_name"]} \nLa pagina verrà ricaricata!!!`
+        );
+      } else {
+        alert(
+          "Questa categoria non è legata a nessun gruppo D-M_ o D-A_ \nLa pagina verrà ricaricata!!!"
+        );
+      }
       location.reload();
     });
   }

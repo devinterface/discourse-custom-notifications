@@ -5,12 +5,14 @@ class ModeratoriController < ::ApplicationController
 
   def index
     topic = Topic.find(params[:topic_id])
-    user_id = current_user.id
-    # questo comando lancia il job in background per mandare le mail
-    Jobs.enqueue(:send_email_job, topic_id: topic.id, group_type: "D-M_", user_id: user_id)
-    s = ""
-    topic.try(:category).try(:groups).where("name ILIKE 'D-A_%' OR name ILIKE 'D-M_%'").map{|g| s += "#{g.name}; "}
-    render json: { groups_name: s }
+    if topic.try(:category).try(:groups).where("name ILIKE 'D-A_%' OR name ILIKE 'D-M_%'").count.positive?
+      Jobs.enqueue(:send_email_job, topic_id: topic.id, group_type: "D-M_", user_id: current_user.id)
+      s = ""
+      topic.try(:category).try(:groups).where("name ILIKE 'D-A_%' OR name ILIKE 'D-M_%'").map{|g| s += "#{g.name}; "}
+      render json: { sent: true, groups_name: s }
+    else
+      render json: { sent: false, groups_name: "" }
+    end
   end
 
   def edit_category_read_restricted

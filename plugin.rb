@@ -36,20 +36,13 @@ after_initialize do
 
     def execute(args)
       topic = Topic.find(args[:topic_id])
-      # se creo topic ma non ha gruppi D-A_ a cui inviare mail allora non crea neanche la notifica
-      return if topic.try(:category).try(:groups).where("name ILIKE 'D-A_%'").count == 0 and args[:group_type] == "D-A_"
-      if args[:user_id]
-        user_id = args[:user_id]
-      else
-        user_id = -1
-      end
       notification = Notification.create({
-          user_id: user_id,
+          user_id: args[:user_id],
           topic_id: topic.id,
           read: false,
           notification_type: Notification.types[:invited_to_topic],
           data: "{\"topic_title\":\"#{topic.title}\"}",
-          high_priority: true
+          high_priority: false
         })
       if args[:group_type] == "D-A_"
         # quando creo topic
@@ -79,36 +72,13 @@ after_initialize do
   DiscourseEvent.on(:topic_created) do |topic, opts, user|
     ### un'altra modalità per un after_create
   end
-
-  class NewTopicObserver
-    def self.topic_created(topic)
-      @pending_topics ||= {}
-      @pending_topics[topic.id] = topic
-    end
-  
-    def self.post_created(post)
-      if @pending_topics && @pending_topics.key?(post.topic_id)
-        topic = post.topic
-        Jobs.enqueue(:send_email_job, topic_id: topic.id, group_type: "D-A_")
-        @pending_topics.delete(post.topic_id)
-      end
-    end
-  end
-  
-  Topic.class_eval do
-    after_create :notify_topic_created
-  
-    def notify_topic_created
-      NewTopicObserver.topic_created(self)
-    end
-  end
   
   Post.class_eval do
     after_create :notify_post_created
   
     def notify_post_created
-      if self.is_first_post?
-        NewTopicObserver.post_created(self)
+      if self.is_first_post? and self.user_id != -1 and self.topic.try(:category).try(:groups).where("name ILIKE 'D-A_%'").count.positive?
+        Jobs.enqueue(:send_email_job, topic_id: self.topic_id, group_type: "D-A_", user_id: -1)
       end
     end
   end
@@ -126,10 +96,9 @@ after_initialize do
   add_to_serializer(:topic_view, :notification_buttons) do
     # posso accedere allo user come scope.user.id
     topic_id = object.topic.id
-    groups_count = Topic.find(object.topic.id).try(:category).try(:groups).where("name ILIKE 'D-A_%' OR name ILIKE 'D-M_%'").count
     notifications_count = Notification.where(topic_id: topic_id, notification_type: Notification.types[:invited_to_topic]).count
     return [
-      groups_count > 0,
+      Topic.find(object.topic.id).try(:category).try(:groups).where("name ILIKE 'D-A_%' OR name ILIKE 'D-M_%'").count.positive?,
       notifications_count > 0,
       notifications_count > 1 ? "Mostra #{notifications_count} notifiche" : "Mostra #{notifications_count} notifica"
     ]
