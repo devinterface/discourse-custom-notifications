@@ -79,6 +79,9 @@ after_initialize do
     def notify_post_created
       if self.is_first_post? and self.user_id != -1 and self.topic.try(:category).try(:groups).where("name ILIKE 'D-A_%'").count.positive?
         Jobs.enqueue(:send_email_job, topic_id: self.topic_id, group_type: "D-A_", user_id: -1)
+      elsif self.user_id == -1 and (self.topic.title.downcase.include?("esportazione") or self.topic.title.downcase.include?("backup"))
+        self.topic.archetype = Archetype.default
+        self.topic.save
       end
     end
   end
