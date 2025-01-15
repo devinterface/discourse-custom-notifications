@@ -79,9 +79,6 @@ after_initialize do
     def notify_post_created
       if self.is_first_post? and self.user_id != -1 and self.topic.try(:category).try(:groups).where("name ILIKE 'D-A_%'").count.positive?
         Jobs.enqueue(:send_email_job, topic_id: self.topic_id, group_type: "D-A_", user_id: -1)
-      elsif self.user_id == -1 and (self.topic.title.downcase.include?("esportazione") or self.topic.title.downcase.include?("backup"))
-        self.topic.archetype = Archetype.default
-        self.topic.save
       end
     end
   end
@@ -100,11 +97,19 @@ after_initialize do
     # posso accedere allo user come scope.user.id
     topic_id = object.topic.id
     notifications_count = Notification.where(topic_id: topic_id, notification_type: Notification.types[:invited_to_topic]).count
-    return [
-      Topic.find(object.topic.id).try(:category).try(:groups).where("name ILIKE 'D-A_%' OR name ILIKE 'D-M_%'").count.positive?,
-      notifications_count > 0,
-      notifications_count > 1 ? "Mostra #{notifications_count} notifiche" : "Mostra #{notifications_count} notifica"
-    ]
+    if Topic.find(object.topic.id).category_id.nil?
+      return [
+        false,
+        false,
+        ""
+      ]
+    else
+      return [
+        Topic.find(object.topic.id).try(:category).try(:groups).where("name ILIKE 'D-A_%' OR name ILIKE 'D-M_%'").count.positive?,
+        notifications_count > 0,
+        notifications_count > 1 ? "Mostra #{notifications_count} notifiche" : "Mostra #{notifications_count} notifica"
+      ]
+    end
   end
 
   add_to_serializer(:topic_view, :custom_notifications) do
