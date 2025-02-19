@@ -1,0 +1,12 @@
+.cooked,
+.d-editor-preview {
+  [data-color] {
+    color: var(--color);
+  }
+
+  [data-bgcolor] {
+    background-color: var(--bgcolor);
+    padding: 2px 3px 2px 3px;
+    border-radius: 2px;
+  }
+}
