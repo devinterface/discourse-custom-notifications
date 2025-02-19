@@ -1,0 +1,8 @@
+{
+  "name": "Custom Template",
+  "about_url": "https://github.com/devinterface/discourse-custom-notifications",
+  "authors": ["Devinterface"],
+  "component": true,
+  "about": "Add custom template",
+  "version": 0.1
+}
