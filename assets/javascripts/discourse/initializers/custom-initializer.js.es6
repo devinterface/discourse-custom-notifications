@@ -2,7 +2,7 @@ import { PLUGIN_API_VERSION, withPluginApi } from "discourse/lib/plugin-api";
 import CustomPalette from "../components/modal/custom-palette";
 
 export default {
-  name: "bbcode-init",
+  name: "custom-initializer",
   initialize() {
     withPluginApi(PLUGIN_API_VERSION, (api) => {
       console.log("Inizializzo plugin");
@@ -28,8 +28,8 @@ export default {
                 toolbarEvent: {
                   addText: (text) => {
                     e.applySurround(
-                      `[wrap=color color=black bgcolor=${text}]`,
-                      "[/wrap]",
+                      `[bgcolor=${text}]`,
+                      "[/bgcolor]",
                       "placeholder_coloured_text"
                     );
                   },
