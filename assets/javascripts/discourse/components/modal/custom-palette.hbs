@@ -1,0 +1,45 @@
+{{! template-lint-disable no-pointer-down-event-binding }}
+<DModal
+  {{on "keydown" this.keyDown}}
+  {{on "mousedown" this.mouseDown}}
+  @closeModal={{@closeModal}}
+  @title="Scegli evidenziatore"
+  @bodyClass="insert-link"
+  class="insert-hyperlink-modal"
+>
+  <:body>
+
+    <DButton
+      @action={{fn this.setColor "yellow"}}
+      @label="COLOR"
+      style="background-color: yellow; color: yellow;"
+    />
+
+    <DButton
+      @action={{fn this.setColor "orange"}}
+      @label="COLOR"
+      style="background-color: orange; color: orange;"
+    />
+
+    <DButton
+      @action={{fn this.setColor "red"}}
+      @label="COLOR"
+      style="background-color: red; color: red;"
+    />
+
+    <DButton
+      @action={{fn this.setColor "green"}}
+      @label="COLOR"
+      style="background-color: green; color: green;"
+    />
+
+    <DButton
+      @action={{fn this.setColor "blue"}}
+      @label="COLOR"
+      style="background-color: blue; color: blue;"
+    />
+
+  </:body>
+
+
+</DModal>

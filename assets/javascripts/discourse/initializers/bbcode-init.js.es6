@@ -1,4 +1,5 @@
 import { PLUGIN_API_VERSION, withPluginApi } from "discourse/lib/plugin-api";
+import CustomPalette from "../components/modal/custom-palette";
 
 export default {
   name: "bbcode-init",
@@ -15,14 +16,6 @@ export default {
         return hasAlpha.test(color) || color.length > MAX_LENGTH ? "" : color;
       };
 
-      const colors = [
-        { name: "Select an option", value: "" },
-        { name: "Yellow", value: "yellow" },
-        { name: "Red", value: "red" },
-        { name: "Blue", value: "blue" },
-        { name: "Green", value: "green" },
-      ];
-
       api.onToolbarCreate((toolbar) => {
         toolbar.addButton({
           id: "color_ui_button",
@@ -30,37 +23,19 @@ export default {
           icon: "palette",
           title: "Color the text",
           perform: (e) => {
-            const existingSelect = document.getElementById(
-              "color_picker_select"
-            );
-            if (existingSelect) {
-              existingSelect.remove();
-            }
-
-            const select = document.createElement("select");
-            select.id = "color_picker_select";
-            select.style.position = "absolute";
-            select.style.top = "100px";
-            select.style.left = "10px";
-
-            colors.forEach((color) => {
-              const option = document.createElement("option");
-              option.value = color.value;
-              option.textContent = color.name;
-              select.appendChild(option);
+            api.container.lookup("service:modal").show(CustomPalette, {
+              model: {
+                toolbarEvent: {
+                  addText: (text) => {
+                    e.applySurround(
+                      `[wrap=color color=black bgcolor=${text}]`,
+                      "[/wrap]",
+                      "placeholder_coloured_text"
+                    );
+                  },
+                },
+              },
             });
-
-            select.addEventListener("change", () => {
-              const selectedColor = select.value;
-              e.applySurround(
-                `[wrap=color color=black bgcolor=${selectedColor}]`,
-                "[/wrap]",
-                "placeholder_coloured_text"
-              );
-              select.remove();
-            });
-
-            document.body.appendChild(select);
           },
         });
       });
