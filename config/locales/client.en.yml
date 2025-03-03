@@ -1,10 +1,14 @@
 en:
   js:
     custom:
+      moderatori_plugin: "Moderators Plugin"
       send_notification: "Send notification"
       edit_read_restricted: "Edit restricted"
       export_topic_csv: "Export CSV"
       show_notifications: "Show notifications"
+      moderatori_plugin: "Moderators Plugin"
+      create_user: "Create User"
+      edit_email: "Edit Email"
     number:
       format:
         # symbol used to separate the integer part from the fractional part of a number

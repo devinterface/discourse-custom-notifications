@@ -1,13 +1,36 @@
+<h3>{{i18n "js.custom.create_user"}}</h3>
 
-<h3>Moderatori</h3>
-<div class="buttons">
-  <DButton
-    @label="moderatori.show"
-    @action={{action "showTentacle"}}
-    @icon="eye"
-    @id="show-tentacle"
-  />
-</div>
-{{#if showText}}
-  <h4>Text</h4>
-{{/if}}
+<input type="email" placeholder="Inserisci email" id="new_email_create">
+<input type="text" placeholder="Inserisci username" id="new_username_create">
+<input type="text" placeholder="Inserisci password" id="new_password_create">
+
+<DButton
+  @action={{action "createUser"}}
+  @label="js.custom.create_user"
+  @icon="plus"
+  class="btn-default"
+/>
+<pre>{{createUserText}}</pre>
+
+<h3>{{i18n "js.custom.edit_email"}}</h3>
+
+<input type="email" placeholder="Inserisci vecchia email" name="old_email" id="old_email_edit">
+<input type="email" placeholder="Inserisci nuova email" name="new_email" id="new_email_edit">
+
+<DButton
+  @action={{action "editEmail"}}
+  @label="js.custom.edit_email"
+  @icon="wrench"
+  class="btn-default"
+/>
+
+<pre>{{editEmailText}}</pre>
+
+<script>
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  for (let i = 0; i < 12; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  document.getElementById("new_password_create").value = result;
+</script>

@@ -1,10 +1,14 @@
 it:
   js:
     custom:
+      moderatori_plugin: "Moderatori Plugin"
       send_notification: "Invia notifica"
       edit_read_restricted: "Modifica restrizioni"
       export_topic_csv: "Esporta CSV"
       show_notifications: "Mostra notifiche"
+      moderatori_plugin: "Moderatori Plugin"
+      create_user: "Crea Utente"
+      edit_email: "Modifica Email"
     number:
       format:
         separator: ","

@@ -40,4 +40,61 @@ class ModeratoriController < ::ApplicationController
 
   end
 
+  def custom_create_user
+    if !params[:new_email].present?
+      render json: {error: true, text: "Inserire email"}
+    elsif !params[:new_username].present?
+      render json: {error: true, text: "Inserire username"}
+    elsif UserEmail.where(email: params[:new_email]).exists?
+      render json: {error: true, text: "Email già presente"}
+    elsif User.where(username: params[:new_username]).exists? || User.where(username_lower: params[:new_username].downcase).exists?
+      render json: {error: true, text: "Username già presente"}
+    elsif !params[:new_password].present?
+      render json: {error: true, text: "Inserire password"}
+    elsif params[:new_password].length < 12
+      render json: {error: true, text: "Lunghezza minima password: 12"}
+    else
+      u = User.new(
+        name: params[:new_username],
+        username: params[:new_username],
+        username_lower: params[:new_username].downcase,
+        active: true,
+        admin: false,
+        moderator: false)
+      u.email = params[:new_email]
+      u.password = params[:new_password]
+      if u.save
+        if !u.email_tokens.active.exists?
+          u.email_tokens.create!(email: u.email, scope: EmailToken.scopes[:signup])
+        end
+        u.activate    
+        render json: {error: false, text: "Utente creato!!!\nEmail: #{params[:new_email]}\nPassword: #{params[:new_password]}"}
+      else
+        render json: {error: true, text: u.errors.full_messages.join("\n")}
+      end
+  
+    end
+  end
+
+  def custom_update_email
+    if !params[:new_email].present?
+      render json: {error: true, text: "Inserire vecchia email"}
+    elsif !params[:old_email].present?
+      render json: {error: true, text: "Inserire nuova email"}
+    elsif !UserEmail.where(email: params[:old_email]).exists?
+      render json: {error: true, text: "Utente #{params[:old_email]} non presente"}
+    elsif UserEmail.where(email: params[:new_email]).exists?
+      render json: {error: true, text: "Nuova email #{params[:new_email]} già presente"}
+    else
+      u = UserEmail.find_by(email: params[:old_email]).user
+      u.email = params[:new_email]
+      if u.save
+        render json: {error: false, text: "Nuova email: #{params[:new_email]}"}
+      else
+        render json: {error: true, text: u.errors.full_messages.join("\n")}
+      end
+  
+    end
+  end
+
 end

@@ -11,13 +11,16 @@
 
 enabled_site_setting :moderatori_enabled
 
-add_admin_route 'moderatori.title', 'moderatori'
+add_admin_route 'custom.moderatori_plugin', 'moderatori'
 
 Discourse::Application.routes.append do
   get '/admin/plugins/moderatori' => 'admin/plugins#index', constraints: StaffConstraint.new
   get '/moderatori/:topic_id' => 'moderatori#index'
   get '/category_read_restricted/:category_id' => 'moderatori#edit_category_read_restricted'
   post '/download_csv_topics' => 'moderatori#download_csv_topics'
+  post '/custom_create_user' => 'moderatori#custom_create_user'
+  post '/custom_update_email' => 'moderatori#custom_update_email'
+
 end
 
 after_initialize do
