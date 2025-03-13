@@ -56,6 +56,17 @@ export default {
         },
         { id: "wrap-colors" }
       );
+      // import { apiInitializer } from "discourse/lib/api";
+
+      // export default apiInitializer((api) => {
+      //   api.onPageChange(() => {
+      //     document.querySelectorAll("span.relative-date").forEach((span) => {
+      //       span.textContent = moment(
+      //         parseInt(span.getAttribute("data-time"), 10)
+      //       ).format("DD/MM/YYYY HH:mm");
+      //     });
+      //   });
+      // });
     });
   },
 };
