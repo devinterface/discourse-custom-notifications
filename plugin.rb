@@ -123,7 +123,7 @@ after_initialize do
     ).order(created_at: :desc).map{|n| [n.try(:user).try(:username), n.try(:created_at).in_time_zone('Rome').strftime("%d/%m/%Y %k:%M"), n.user_id == -1 ? "Automatica" : "Manuale"]}
   end
 
-  add_to_serializer(:topic, :all_posts_excerpt) do
+  add_to_serializer(:topic_list_item, :all_posts_excerpt) do
     cooked_posts = object.posts.order(:post_number).pluck(:cooked).join(" ")
     PrettyText.excerpt(cooked_posts, 10000)
   end
