@@ -128,4 +128,250 @@ after_initialize do
     PrettyText.excerpt(cooked_posts, 10000)
   end
 
+  UserNotifications.class_eval do
+    def send_notification_email(opts)
+      post = opts[:post]
+      title = opts[:title]
+
+      allow_reply_by_email = opts[:allow_reply_by_email]
+      use_site_subject = opts[:use_site_subject]
+      add_re_to_subject = opts[:add_re_to_subject] && post.post_number > 1
+      use_topic_title_subject = opts[:use_topic_title_subject]
+      username = opts[:username]
+      from_alias = opts[:from_alias]
+      notification_type = opts[:notification_type]
+      user = opts[:user]
+      group_name = opts[:group_name]
+      locale = user_locale(user)
+
+      template = +"user_notifications.user_#{notification_type}"
+      if post.topic.private_message?
+        template << "_pm"
+
+        if group_name
+          template << "_group"
+        elsif user.staged
+          template << "_staged"
+        end
+      end
+
+      # category name
+      category = Topic.find_by(id: post.topic_id)&.category
+      if opts[:show_category_in_subject] && post.topic_id && category && !category.uncategorized?
+        show_category_in_subject = category.name
+
+        # subcategory case
+        if !category.parent_category_id.nil?
+          show_category_in_subject =
+            "#{Category.where(id: category.parent_category_id).pick(:name)}/#{show_category_in_subject}"
+        end
+      else
+        show_category_in_subject = nil
+      end
+
+      # tag names
+      if opts[:show_tags_in_subject] && post.topic_id
+        max_tags =
+          if SiteSetting.enable_max_tags_per_email_subject
+            SiteSetting.max_tags_per_email_subject
+          else
+            SiteSetting.max_tags_per_topic
+          end
+
+        tags =
+          DiscourseTagging
+            .visible_tags(Guardian.new(user))
+            .joins(:topic_tags)
+            .where("topic_tags.topic_id = ?", post.topic_id)
+            .order("tags.public_topic_count DESC", "tags.name ASC")
+            .limit(max_tags)
+            .pluck(:name)
+
+        show_tags_in_subject = tags.any? ? tags.join(" ") : nil
+      end
+
+      group = post.topic.allowed_groups&.first
+
+      if post.topic.private_message?
+        subject_pm =
+          if opts[:show_group_in_subject] && group.present?
+            if group.full_name
+              "[#{group.full_name}] "
+            else
+              "[#{group.name}] "
+            end
+          else
+            I18n.t("subject_pm")
+          end
+
+        participants = self.class.participants(post, user)
+      end
+
+      if SiteSetting.private_email?
+        title = I18n.t("system_messages.private_topic_title", id: post.topic_id)
+      end
+
+      context = +""
+      tu = TopicUser.get(post.topic_id, user)
+      context_posts = self.class.get_context_posts(post, tu, user)
+
+      # make .present? cheaper
+      context_posts = context_posts.to_a
+
+      if context_posts.present?
+        context << +"-- \n*#{I18n.t("user_notifications.previous_discussion")}*\n"
+        context_posts.each { |cp| context << email_post_markdown(cp, true) }
+      end
+
+      translation_override_exists =
+        TranslationOverride.where(
+          locale: SiteSetting.default_locale,
+          translation_key: "#{template}.text_body_template",
+        ).exists?
+
+      if opts[:use_invite_template]
+        invite_template = +"user_notifications.invited"
+        invite_template << "_group" if group_name
+
+        invite_template << if post.topic.private_message?
+          "_to_private_message_body"
+        else
+          "_to_topic_body"
+        end
+
+        ################################
+        # OVERRIDE
+        ################################
+
+        topic_excerpt = ""
+        post.topic.posts.order(:post_number).each do |p|
+          topic_excerpt += "#{p.user.username} - #{p.created_at.strftime("%d/%m/%Y %H:%M:%S")}\n\n"
+          topic_excerpt += p.cooked.tr("\n", " ")
+        end
+
+        ################################
+        # FINE OVERRIDE
+        ################################
+
+        topic_url = post.topic&.url
+
+        if SiteSetting.private_email?
+          topic_excerpt = ""
+          topic_url = ""
+        end
+
+        message =
+          I18n.t(
+            invite_template,
+            username: username,
+            group_name: group_name,
+            topic_title: gsub_emoji_to_unicode(title),
+            topic_excerpt: topic_excerpt,
+            site_title: SiteSetting.title,
+            site_description: SiteSetting.site_description,
+            topic_url: topic_url,
+          )
+
+        html = PrettyText.cook(message, sanitize: false).html_safe
+      else
+        reached_limit = SiteSetting.max_emails_per_day_per_user > 0
+        reached_limit &&=
+          (EmailLog.where(user_id: user.id).where("created_at > ?", 1.day.ago).count) >=
+            (SiteSetting.max_emails_per_day_per_user - 1)
+
+        in_reply_to_post = post.reply_to_post if user.user_option.email_in_reply_to
+        if SiteSetting.private_email?
+          message = I18n.t("system_messages.contents_hidden")
+        else
+          message =
+            email_post_markdown(post) +
+              (
+                if reached_limit
+                  "\n\n#{I18n.t "user_notifications.reached_limit", count: SiteSetting.max_emails_per_day_per_user}"
+                else
+                  ""
+                end
+              )
+        end
+
+        first_footer_classes = "highlight"
+        if (allow_reply_by_email && user.staged) || (user.suspended? || user.staged?)
+          first_footer_classes = ""
+        end
+
+        unless translation_override_exists
+          html =
+            UserNotificationRenderer.render(
+              template: "email/notification",
+              format: :html,
+              locals: {
+                context_posts: context_posts,
+                reached_limit: reached_limit,
+                post: post,
+                in_reply_to_post: in_reply_to_post,
+                classes: Rtl.new(user).css_class,
+                first_footer_classes: first_footer_classes,
+                reply_above_line: false,
+              },
+            )
+        end
+      end
+
+      email_opts = {
+        topic_title: Emoji.gsub_emoji_to_unicode(title),
+        topic_title_url_encoded: title ? UrlHelper.encode_component(title) : title,
+        message: message,
+        url: post.url(without_slug: SiteSetting.private_email?),
+        post_id: post.id,
+        topic_id: post.topic_id,
+        context: context,
+        username: username,
+        group_name: group_name,
+        add_unsubscribe_link: !user.staged,
+        mailing_list_mode: user.user_option.mailing_list_mode,
+        unsubscribe_url: post.unsubscribe_url(user),
+        allow_reply_by_email: allow_reply_by_email,
+        only_reply_by_email: allow_reply_by_email && user.staged,
+        use_site_subject: use_site_subject,
+        add_re_to_subject: add_re_to_subject,
+        show_category_in_subject: show_category_in_subject,
+        show_tags_in_subject: show_tags_in_subject,
+        private_reply: post.topic.private_message?,
+        subject_pm: subject_pm,
+        participants: participants,
+        include_respond_instructions: !(user.suspended? || user.staged?),
+        notification_type: notification_type,
+        template: template,
+        use_topic_title_subject: use_topic_title_subject,
+        site_description: SiteSetting.site_description,
+        site_title: SiteSetting.title,
+        site_title_url_encoded: UrlHelper.encode_component(SiteSetting.title),
+        locale: locale,
+      }
+
+      email_opts[:html_override] = html unless translation_override_exists
+
+      # If we have a display name, change the from address
+      email_opts[:from_alias] = from_alias if from_alias.present?
+
+      TopicUser.change(user.id, post.topic_id, last_emailed_post_number: post.post_number)
+
+      build_email(user.email, email_opts)
+    end
+  end
+
 end
+
+# user = User.find(2099)
+# notification = Notification.last
+# topic = notification.topic
+# message = UserNotifications.public_send(
+#   "user_invited_to_topic",
+#   user,
+#   notification_type: Notification.types[notification.notification_type],
+#   notification_data_hash: notification.data_hash,
+#   post: topic.try(:posts).try(:first)
+# )
+# Email::Sender.new(message, :invited_to_topic).send
+
+# DB.query("update site_settings set value = 10000 where id = 61 or id = 86;")
