@@ -128,6 +128,21 @@ after_initialize do
     PrettyText.excerpt(cooked_posts, 10000)
   end
 
+  Notification.class_eval do
+    after_create :fix_invalid_json_data
+
+    def fix_invalid_json_data
+      return unless self.data.include?("topic_title")
+      fixed = self.data.dup
+      fixed = fixed.gsub(/(?<=:")([^"]*?)"([^"]*?")/, '\1\" \2')
+      if fixed =~ /"topic_title":"(.*)"/
+        fixed = { topic_title: $1 }.to_json
+      end
+      self.data = fixed
+      self.save!
+    end
+  end
+
   UserNotifications.class_eval do
     def send_notification_email(opts)
       post = opts[:post]
@@ -375,3 +390,16 @@ end
 # Email::Sender.new(message, :invited_to_topic).send
 
 # DB.query("update site_settings set value = 10000 where id = 61 or id = 86;")
+
+# select id, name, value from site_settings where name ILIKE '%length%';
+
+# update site_settings set value = 50000 where id = 61 or id = 86;
+
+# def fix_invalid_json_data(data)
+#   return unless data.include?("topic_title")
+#   fixed = data.dup.gsub(/(?<=:")([^"]*?)"([^"]*?")/, '\1\" \2')
+#   if fixed =~ /"topic_title":"(.*)"/
+#     fixed = { topic_title: $1 }.to_json
+#   end
+#   return fixed
+# end
