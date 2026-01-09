@@ -1,5 +1,5 @@
 import { PLUGIN_API_VERSION, withPluginApi } from "discourse/lib/plugin-api";
-import { discourseComputed } from "discourse-common/utils/decorators";
+import discourseComputed from "discourse/lib/decorators";
 
 export default {
   name: "override-full-page-search-can-bulk-select",
